@@ -35,13 +35,15 @@
 #ifndef HARDWARE_INTERFACE_H
 #define HARDWARE_INTERFACE_H
 
+#include <map>
 #include <string>
 #include <vector>
 
-#include <ros/ros.h>
+#include <rclcpp/duration.hpp>
+#include <rclcpp/time.hpp>
 
-#include <geometry_msgs/Vector3.h>
-#include <geometry_msgs/Wrench.h>
+#include <geometry_msgs/msg/vector3.hpp>
+#include <geometry_msgs/msg/wrench.hpp>
 
 namespace pr2_hardware_interface{
 
@@ -77,10 +79,10 @@ public:
    * The time at which actuator state was measured, relative to the time the ethercat process was started.
    * Timestamp value is not synchronised with wall time and may be different for different actuators.
    * For Willow Garage motor controllers, timestamp is made when actuator data is sampled.
-   * sample_timestamp_ will provide better accuracy than ros::Time::now() or robot->getTime()
+   * sample_timestamp_ will provide better accuracy than rclcpp::Clock::now() or robot->getTime()
    * when using a time difference in calculations based on actuator variables.
    */
-  ros::Duration sample_timestamp_;
+  rclcpp::Duration sample_timestamp_{0, 0};  // rclcpp::Duration has no default ctor
 
   /** The time at which this actuator state was measured (in seconds).
    * This value should be same as sample_timestamp_.toSec() for Willow Garage devices.
@@ -196,7 +198,7 @@ class AccelerometerState
 {
 public:
   std::string frame_id_;  //!< Frame id of accelerometer
-  std::vector<geometry_msgs::Vector3> samples_; //!< A vector of samples taken from the accelerometer (in m/s/s) since the last iteration of the control loop (oldest samples first).
+  std::vector<geometry_msgs::msg::Vector3> samples_; //!< A vector of samples taken from the accelerometer (in m/s/s) since the last iteration of the control loop (oldest samples first).
 };
 
 /*!
@@ -222,7 +224,7 @@ class ForceTorqueState
 public:
   bool good_; //!< True if sensor is working properly. False if some type of error is detected.
   //!< A vector of samples taken from force/torque sensor since the last iteration of the control loop (oldest samples first).
-  std::vector<geometry_msgs::Wrench> samples_;
+  std::vector<geometry_msgs::msg::Wrench> samples_;
 };
 
 class ForceTorqueCommand
@@ -584,7 +586,7 @@ public:
     return p.second;
   }
 
-  ros::Time current_time_; //!< The time at which the commands were sent to the hardware
+  rclcpp::Time current_time_; //!< The time at which the commands were sent to the hardware
 };
 }
 

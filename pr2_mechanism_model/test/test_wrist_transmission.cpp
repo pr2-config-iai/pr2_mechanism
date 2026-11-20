@@ -60,7 +60,7 @@ protected:
 #if URDFDOM_1_0_0_API
     urdf::JointConstSharedPtr joint(new urdf::Joint());
 #else
-    boost::shared_ptr<const urdf::Joint> joint(new urdf::Joint());
+    urdf::JointConstSharedPtr joint(new urdf::Joint());
 #endif
     joint_states_[0]->joint_ = joint;
     joint_states_[1]->joint_ = joint;
@@ -262,7 +262,6 @@ TEST_F(PropagateSanityCheck, CommandEffort)
 
 int main(int argc, char **argv)
 {
-  ros::Time::init();
   testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
 }

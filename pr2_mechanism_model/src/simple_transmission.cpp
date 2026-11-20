@@ -37,6 +37,8 @@
 #include <math.h>
 #include <pluginlib/class_list_macros.hpp>
 #include "pr2_mechanism_model/robot.h"
+#include "pr2_mechanism_model/logging.h"
+#include <boost/lexical_cast.hpp>
 #include "pr2_mechanism_model/simple_transmission.h"
 
 using namespace pr2_mechanism_model;
@@ -55,18 +57,18 @@ bool SimpleTransmission::initXml(TiXmlElement *elt, Robot *robot)
   const char *joint_name = jel ? jel->Attribute("name") : NULL;
   if (!joint_name)
   {
-    ROS_ERROR("SimpleTransmission did not specify joint name");
+    RCLCPP_ERROR(::pr2_mechanism_model::logger(), "SimpleTransmission did not specify joint name");
     return false;
   }
 
 #if URDFDOM_1_0_0_API
   urdf::JointConstSharedPtr joint = robot->robot_model_.getJoint(joint_name);
 #else
-  const boost::shared_ptr<const urdf::Joint> joint = robot->robot_model_.getJoint(joint_name);
+  const urdf::JointConstSharedPtr joint = robot->robot_model_.getJoint(joint_name);
 #endif
   if (!joint)
   {
-    ROS_ERROR("SimpleTransmission could not find joint named \"%s\"", joint_name);
+    RCLCPP_ERROR(::pr2_mechanism_model::logger(), "SimpleTransmission could not find joint named \"%s\"", joint_name);
     return false;
   }
   joint_names_.push_back(joint_name);
@@ -76,7 +78,7 @@ bool SimpleTransmission::initXml(TiXmlElement *elt, Robot *robot)
   Actuator *a;
   if (!actuator_name || (a = robot->getActuator(actuator_name)) == NULL )
   {
-    ROS_ERROR("SimpleTransmission could not find actuator named \"%s\"", actuator_name);
+    RCLCPP_ERROR(::pr2_mechanism_model::logger(), "SimpleTransmission is missing an actuator name");
     return false;
   }
   a->command_.enable_ = true;
@@ -94,7 +96,7 @@ bool SimpleTransmission::initXml(TiXmlElement *elt, Robot *robot)
     const char *joint_name = j->Attribute("name");
     if (!joint_name)
     {
-      ROS_ERROR("SimpleTransmission did not specify screw joint name");
+      RCLCPP_ERROR(::pr2_mechanism_model::logger(), "SimpleTransmission did not specify screw joint name");
       use_simulated_actuated_joint_=false;
     }
     else
@@ -102,11 +104,11 @@ bool SimpleTransmission::initXml(TiXmlElement *elt, Robot *robot)
 #if URDFDOM_1_0_0_API
       urdf::JointConstSharedPtr joint = robot->robot_model_.getJoint(joint_name);
 #else
-      const boost::shared_ptr<const urdf::Joint> joint = robot->robot_model_.getJoint(joint_name);
+      const urdf::JointConstSharedPtr joint = robot->robot_model_.getJoint(joint_name);
 #endif
       if (!joint)
       {
-        ROS_ERROR("SimpleTransmission could not find screw joint named \"%s\"", joint_name);
+        RCLCPP_ERROR(::pr2_mechanism_model::logger(), "SimpleTransmission could not find screw joint named \"%s\"", joint_name);
         use_simulated_actuated_joint_=false;
       }
       else
@@ -118,7 +120,7 @@ bool SimpleTransmission::initXml(TiXmlElement *elt, Robot *robot)
         const char *simulated_reduction = j->Attribute("simulated_reduction");
         if (!simulated_reduction)
         {
-          ROS_ERROR("SimpleTransmission's joint \"%s\" has no coefficient: simulated_reduction.", joint_name);
+          RCLCPP_ERROR(::pr2_mechanism_model::logger(), "SimpleTransmission's joint \"%s\" has no coefficient: simulated_reduction.", joint_name);
           return false;
         }
         try
@@ -127,7 +129,7 @@ bool SimpleTransmission::initXml(TiXmlElement *elt, Robot *robot)
         }
         catch (boost::bad_lexical_cast &e)
         {
-          ROS_ERROR("simulated_reduction (%s) is not a float",simulated_reduction);
+          RCLCPP_ERROR(::pr2_mechanism_model::logger(), "simulated_reduction (%s) is not a float",simulated_reduction);
           return false;
         }
       }
@@ -145,7 +147,7 @@ bool SimpleTransmission::initXml(TiXmlElement *elt)
   const char *joint_name = jel ? jel->Attribute("name") : NULL;
   if (!joint_name)
   {
-    ROS_ERROR("SimpleTransmission did not specify joint name");
+    RCLCPP_ERROR(::pr2_mechanism_model::logger(), "SimpleTransmission did not specify joint name");
     return false;
   }
   joint_names_.push_back(joint_name);
@@ -154,7 +156,7 @@ bool SimpleTransmission::initXml(TiXmlElement *elt)
   const char *actuator_name = ael ? ael->Attribute("name") : NULL;
   if (!actuator_name)
   {
-    ROS_ERROR("SimpleTransmission could not find actuator named \"%s\"", actuator_name);
+    RCLCPP_ERROR(::pr2_mechanism_model::logger(), "SimpleTransmission is missing an actuator name");
     return false;
   }
   actuator_names_.push_back(actuator_name);
@@ -167,7 +169,7 @@ bool SimpleTransmission::initXml(TiXmlElement *elt)
     const char *joint_name = j->Attribute("name");
     if (!joint_name)
     {
-      ROS_ERROR("SimpleTransmission screw joint did not specify joint name");
+      RCLCPP_ERROR(::pr2_mechanism_model::logger(), "SimpleTransmission screw joint did not specify joint name");
       use_simulated_actuated_joint_=false;
     }
     else
@@ -179,7 +181,7 @@ bool SimpleTransmission::initXml(TiXmlElement *elt)
       const char *simulated_reduction = j->Attribute("simulated_reduction");
       if (!simulated_reduction)
       {
-        ROS_ERROR("SimpleTransmission's joint \"%s\" has no coefficient: simulated_reduction.", joint_name);
+        RCLCPP_ERROR(::pr2_mechanism_model::logger(), "SimpleTransmission's joint \"%s\" has no coefficient: simulated_reduction.", joint_name);
         return false;
       }
       try
@@ -188,7 +190,7 @@ bool SimpleTransmission::initXml(TiXmlElement *elt)
       }
       catch (boost::bad_lexical_cast &e)
       {
-        ROS_ERROR("simulated_reduction (%s) is not a float",simulated_reduction);
+        RCLCPP_ERROR(::pr2_mechanism_model::logger(), "simulated_reduction (%s) is not a float",simulated_reduction);
         return false;
       }
     }
@@ -231,22 +233,22 @@ void SimpleTransmission::propagatePositionBackwards(
   if (! simulated_actuator_timestamp_initialized_)
     {
       // Set the time stamp to zero (it is measured relative to the start time).
-      as[0]->state_.sample_timestamp_ = ros::Duration(0);
+      as[0]->state_.sample_timestamp_ = rclcpp::Duration(0, 0);
 
       // Try to set the start time.  Only then do we claim initialized.
-      if (ros::isStarted())
+      if (true)
 	{
-	  simulated_actuator_start_time_ = ros::Time::now();
+	  simulated_actuator_start_time_ = ::pr2_mechanism_model::now();
 	  simulated_actuator_timestamp_initialized_ = true;
 	}
     }
   else
     {
       // Measure the time stamp relative to the start time.
-      as[0]->state_.sample_timestamp_ = ros::Time::now() - simulated_actuator_start_time_;
+      as[0]->state_.sample_timestamp_ = ::pr2_mechanism_model::now() - simulated_actuator_start_time_;
     }
   // Set the historical (double) timestamp accordingly.
-  as[0]->state_.timestamp_ = as[0]->state_.sample_timestamp_.toSec();
+  as[0]->state_.timestamp_ = as[0]->state_.sample_timestamp_.seconds();
 
   // simulate calibration sensors by filling out actuator states
   this->joint_calibration_simulator_.simulateJointCalibration(js[0],as[0]);

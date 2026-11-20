@@ -30,6 +30,7 @@
 // Author: Stuart Glaser, Wim Meeussen
 
 #include "pr2_mechanism_model/chain.h"
+#include "pr2_mechanism_model/logging.h"
 #include <kdl/tree.hpp>
 #include <kdl_parser/kdl_parser.hpp>
 
@@ -45,7 +46,7 @@ bool Chain::init(RobotState *robot_state, const std::string &root, const std::st
   // Constructs the kdl chain
   KDL::Tree kdl_tree;
   if (!kdl_parser::treeFromUrdfModel(robot_state->model_->robot_model_, kdl_tree)){
-    ROS_ERROR("Could not convert urdf into kdl tree");
+    RCLCPP_ERROR(::pr2_mechanism_model::logger(), "Could not convert urdf into kdl tree");
     return false;
   }
 
@@ -57,7 +58,7 @@ bool Chain::init(RobotState *robot_state, const std::string &root, const std::st
     res = false;
   }
   if (!res){
-    ROS_ERROR("Could not extract chain between %s and %s from kdl tree",
+    RCLCPP_ERROR(::pr2_mechanism_model::logger(), "Could not extract chain between %s and %s from kdl tree",
               root.c_str(), tip.c_str());
     return false;
   }
@@ -69,13 +70,13 @@ bool Chain::init(RobotState *robot_state, const std::string &root, const std::st
     if (kdl_chain_.getSegment(i).getJoint().getType() != KDL::Joint::None){ 
       JointState* jnt = robot_state->getJointState(kdl_chain_.getSegment(i).getJoint().getName());
       if (!jnt){
-        ROS_ERROR("Joint '%s' is not found in joint state vector", kdl_chain_.getSegment(i).getJoint().getName().c_str());
+        RCLCPP_ERROR(::pr2_mechanism_model::logger(), "Joint '%s' is not found in joint state vector", kdl_chain_.getSegment(i).getJoint().getName().c_str());
         return false;
       }
       joints_.push_back(jnt);
     }
   }
-  ROS_DEBUG("Added %i joints", int(joints_.size()));
+  RCLCPP_DEBUG(::pr2_mechanism_model::logger(), "Added %i joints", int(joints_.size()));
 
   return true;
 }

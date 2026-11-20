@@ -33,6 +33,7 @@
  *********************************************************************/
 
 #include <pr2_mechanism_model/pr2_belt_transmission.h>
+#include "pr2_mechanism_model/logging.h"
 #include <math.h>
 #include <pluginlib/class_list_macros.hpp>
 
@@ -50,18 +51,18 @@ bool PR2BeltCompensatorTransmission::initXml(TiXmlElement *elt, Robot *robot)
   const char *joint_name = jel ? jel->Attribute("name") : NULL;
   if (!joint_name)
   {
-    ROS_ERROR("PR2BeltCompensatorTransmission did not specify joint name");
+    RCLCPP_ERROR(::pr2_mechanism_model::logger(), "PR2BeltCompensatorTransmission did not specify joint name");
     return false;
   }
 
 #if URDFDOM_1_0_0_API
   urdf::JointConstSharedPtr joint = robot->robot_model_.getJoint(joint_name);
 #else
-  const boost::shared_ptr<const urdf::Joint> joint = robot->robot_model_.getJoint(joint_name);
+  const urdf::JointConstSharedPtr joint = robot->robot_model_.getJoint(joint_name);
 #endif
   if (!joint)
   {
-    ROS_ERROR("PR2BeltCompensatorTransmission could not find joint named \"%s\"", joint_name);
+    RCLCPP_ERROR(::pr2_mechanism_model::logger(), "PR2BeltCompensatorTransmission could not find joint named \"%s\"", joint_name);
     return false;
   }
   joint_names_.push_back(joint_name);
@@ -71,7 +72,7 @@ bool PR2BeltCompensatorTransmission::initXml(TiXmlElement *elt, Robot *robot)
   pr2_hardware_interface::Actuator *a;
   if (!actuator_name || (a = robot->getActuator(actuator_name)) == NULL )
   {
-    ROS_ERROR("PR2BeltCompensatorTransmission could not find actuator named \"%s\"", actuator_name);
+    RCLCPP_ERROR(::pr2_mechanism_model::logger(), "PR2BeltCompensatorTransmission could not find actuator named \"%s\"", actuator_name);
     return false;
   }
   a->command_.enable_ = true;
@@ -82,14 +83,14 @@ bool PR2BeltCompensatorTransmission::initXml(TiXmlElement *elt, Robot *robot)
   TiXmlElement *c = elt->FirstChildElement("compensator");
   if (!c)
   {
-    ROS_ERROR("No compensator element given for transmission %s", name_.c_str());
+    RCLCPP_ERROR(::pr2_mechanism_model::logger(), "No compensator element given for transmission %s", name_.c_str());
     return false;
   }
 
   double k_belt;
   const char *k_belt_str = c->Attribute("k_belt");
   if (!k_belt_str) {
-    ROS_ERROR("No k_belt given for transmission %s", name_.c_str());
+    RCLCPP_ERROR(::pr2_mechanism_model::logger(), "No k_belt given for transmission %s", name_.c_str());
     return false;
   }
   k_belt = atof(k_belt_str);
@@ -97,7 +98,7 @@ bool PR2BeltCompensatorTransmission::initXml(TiXmlElement *elt, Robot *robot)
   double mass_motor;
   const char *mass_motor_str = c->Attribute("mass_motor");
   if (!mass_motor_str) {
-    ROS_ERROR("No mass_motor given for transmission %s", name_.c_str());
+    RCLCPP_ERROR(::pr2_mechanism_model::logger(), "No mass_motor given for transmission %s", name_.c_str());
     return false;
   }
   mass_motor = atof(mass_motor_str);
@@ -107,28 +108,28 @@ bool PR2BeltCompensatorTransmission::initXml(TiXmlElement *elt, Robot *robot)
 
   const char *kd_motor_str = c->Attribute("kd_motor");
   if (!kd_motor_str) {
-    ROS_ERROR("No kd_motor given for transmission %s", name_.c_str());
+    RCLCPP_ERROR(::pr2_mechanism_model::logger(), "No kd_motor given for transmission %s", name_.c_str());
     return false;
   }
   Kd_motor_ = atof(kd_motor_str);
 
   const char *lambda_motor_str = c->Attribute("lambda_motor");
   if (!lambda_motor_str) {
-    ROS_ERROR("No lambda_motor given for transmission %s", name_.c_str());
+    RCLCPP_ERROR(::pr2_mechanism_model::logger(), "No lambda_motor given for transmission %s", name_.c_str());
     return false;
   }
   lambda_motor_ = atof(lambda_motor_str);
 
   const char *lambda_joint_str = c->Attribute("lambda_joint");
   if (!lambda_joint_str) {
-    ROS_ERROR("No lambda_joint given for transmission %s", name_.c_str());
+    RCLCPP_ERROR(::pr2_mechanism_model::logger(), "No lambda_joint given for transmission %s", name_.c_str());
     return false;
   }
   lambda_joint_ = atof(lambda_joint_str);
 
   const char *lambda_combined_str = c->Attribute("lambda_combined");
   if (!lambda_combined_str) {
-    ROS_ERROR("No lambda_combined given for transmission %s", name_.c_str());
+    RCLCPP_ERROR(::pr2_mechanism_model::logger(), "No lambda_combined given for transmission %s", name_.c_str());
     return false;
   }
   lambda_combo_ = atof(lambda_combined_str);
@@ -141,7 +142,7 @@ bool PR2BeltCompensatorTransmission::initXml(TiXmlElement *elt, Robot *robot)
   delta_motor_vel_ = 0;
   last_motor_damping_force_ = 0;
 
-  last_timestamp_ = ros::Duration(0);
+  last_timestamp_ = rclcpp::Duration(0, 0);
 
   // Initialize the backward transmission state variables.
   last_timestamp_backwards_ = last_timestamp_;
@@ -165,7 +166,7 @@ bool PR2BeltCompensatorTransmission::initXml(TiXmlElement *elt)
   const char *joint_name = jel ? jel->Attribute("name") : NULL;
   if (!joint_name)
   {
-    ROS_ERROR("PR2BeltCompensatorTransmission did not specify joint name");
+    RCLCPP_ERROR(::pr2_mechanism_model::logger(), "PR2BeltCompensatorTransmission did not specify joint name");
     return false;
   }
 
@@ -180,14 +181,14 @@ bool PR2BeltCompensatorTransmission::initXml(TiXmlElement *elt)
   TiXmlElement *c = elt->FirstChildElement("compensator");
   if (!c)
   {
-    ROS_ERROR("No compensator element given for transmission %s", name_.c_str());
+    RCLCPP_ERROR(::pr2_mechanism_model::logger(), "No compensator element given for transmission %s", name_.c_str());
     return false;
   }
 
   double k_belt;
   const char *k_belt_str = c->Attribute("k_belt");
   if (!k_belt_str) {
-    ROS_ERROR("No k_belt given for transmission %s", name_.c_str());
+    RCLCPP_ERROR(::pr2_mechanism_model::logger(), "No k_belt given for transmission %s", name_.c_str());
     return false;
   }
   k_belt = atof(k_belt_str);
@@ -195,7 +196,7 @@ bool PR2BeltCompensatorTransmission::initXml(TiXmlElement *elt)
   double mass_motor;
   const char *mass_motor_str = c->Attribute("mass_motor");
   if (!mass_motor_str) {
-    ROS_ERROR("No mass_motor given for transmission %s", name_.c_str());
+    RCLCPP_ERROR(::pr2_mechanism_model::logger(), "No mass_motor given for transmission %s", name_.c_str());
     return false;
   }
   mass_motor = atof(mass_motor_str);
@@ -205,28 +206,28 @@ bool PR2BeltCompensatorTransmission::initXml(TiXmlElement *elt)
 
   const char *kd_motor_str = c->Attribute("kd_motor");
   if (!kd_motor_str) {
-    ROS_ERROR("No kd_motor given for transmission %s", name_.c_str());
+    RCLCPP_ERROR(::pr2_mechanism_model::logger(), "No kd_motor given for transmission %s", name_.c_str());
     return false;
   }
   Kd_motor_ = atof(kd_motor_str);
 
   const char *lambda_motor_str = c->Attribute("lambda_motor");
   if (!lambda_motor_str) {
-    ROS_ERROR("No lambda_motor given for transmission %s", name_.c_str());
+    RCLCPP_ERROR(::pr2_mechanism_model::logger(), "No lambda_motor given for transmission %s", name_.c_str());
     return false;
   }
   lambda_motor_ = atof(lambda_motor_str);
 
   const char *lambda_joint_str = c->Attribute("lambda_joint");
   if (!lambda_joint_str) {
-    ROS_ERROR("No lambda_joint given for transmission %s", name_.c_str());
+    RCLCPP_ERROR(::pr2_mechanism_model::logger(), "No lambda_joint given for transmission %s", name_.c_str());
     return false;
   }
   lambda_joint_ = atof(lambda_joint_str);
 
   const char *lambda_combined_str = c->Attribute("lambda_combined");
   if (!lambda_combined_str) {
-    ROS_ERROR("No lambda_combined given for transmission %s", name_.c_str());
+    RCLCPP_ERROR(::pr2_mechanism_model::logger(), "No lambda_combined given for transmission %s", name_.c_str());
     return false;
   }
   lambda_combo_ = atof(lambda_combined_str);
@@ -239,7 +240,7 @@ bool PR2BeltCompensatorTransmission::initXml(TiXmlElement *elt)
   delta_motor_vel_ = 0;
   last_motor_damping_force_ = 0;
 
-  last_timestamp_ = ros::Duration(0);
+  last_timestamp_ = rclcpp::Duration(0, 0);
 
   // Initialize the backward transmission state variables.
   last_timestamp_backwards_ = last_timestamp_;
@@ -259,8 +260,8 @@ void PR2BeltCompensatorTransmission::propagatePosition(
 {
   assert(as.size() == 1);
   assert(js.size() == 1);
-  ros::Duration timestamp = as[0]->state_.sample_timestamp_;
-  dt = (timestamp - last_timestamp_).toSec();
+  rclcpp::Duration timestamp = as[0]->state_.sample_timestamp_;
+  dt = (timestamp - last_timestamp_).seconds();
   last_timestamp_ = timestamp;
 
   // These are not the actual "motor" positions.  They are the
@@ -461,8 +462,8 @@ void PR2BeltCompensatorTransmission::propagateEffortBackwards(
   // this clean we recalculate.  The question remains who defines the
   // time step.  Like the forward transmission, we can only use the time
   // step in the actuator state, though this makes little sense here...
-  ros::Duration timestamp = as[0]->state_.sample_timestamp_;
-  halfdt = 0.5*(timestamp - last_timestamp_backwards_).toSec();
+  rclcpp::Duration timestamp = as[0]->state_.sample_timestamp_;
+  halfdt = 0.5*(timestamp - last_timestamp_backwards_).seconds();
   last_timestamp_backwards_ = timestamp;
 
   // Get the actuator force acting on the motor mass, multipled by the
@@ -612,22 +613,22 @@ void PR2BeltCompensatorTransmission::propagatePositionBackwards(
   if (! simulated_actuator_timestamp_initialized_)
     {
       // Set the time stamp to zero (it is measured relative to the start time).
-      as[0]->state_.sample_timestamp_ = ros::Duration(0);
+      as[0]->state_.sample_timestamp_ = rclcpp::Duration(0, 0);
 
       // Try to set the start time.  Only then do we claim initialized.
-      if (ros::isStarted())
+      if (true)
 	{
-	  simulated_actuator_start_time_ = ros::Time::now();
+	  simulated_actuator_start_time_ = ::pr2_mechanism_model::now();
 	  simulated_actuator_timestamp_initialized_ = true;
 	}
     }
   else
     {
       // Measure the time stamp relative to the start time.
-      as[0]->state_.sample_timestamp_ = ros::Time::now() - simulated_actuator_start_time_;
+      as[0]->state_.sample_timestamp_ = ::pr2_mechanism_model::now() - simulated_actuator_start_time_;
     }
   // Set the historical (double) timestamp accordingly.
-  as[0]->state_.timestamp_ = as[0]->state_.sample_timestamp_.toSec();
+  as[0]->state_.timestamp_ = as[0]->state_.sample_timestamp_.seconds();
 
 
   // Simulate calibration sensors by filling out actuator states

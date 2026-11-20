@@ -39,7 +39,7 @@
 #ifndef PR2_MECHANISM_MODEL_TREE_H
 #define PR2_MECHANISM_MODEL_TREE_H
 
-#include <ros/ros.h>
+#include "pr2_mechanism_model/logging.h"
 #include <kdl/chain.hpp>
 #include <kdl/tree.hpp>
 #include <kdl/jntarray.hpp>

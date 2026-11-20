@@ -27,7 +27,6 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <ros/package.h>
 #include <gtest/gtest.h>
 #include <vector>
 #include <boost/scoped_ptr.hpp>
@@ -56,7 +55,7 @@ protected:
 TEST_F(ShortChainTest, FKShouldMatchOnShortChainWhenStraight)
 {
   TiXmlDocument urdf_xml;
-  urdf_xml.LoadFile(ros::package::getPath("pr2_mechanism_model") + "/pr2.urdf");
+  urdf_xml.LoadFile(std::string(PR2_URDF_PATH));
   TiXmlElement *root = urdf_xml.FirstChildElement("robot");
   ASSERT_TRUE(root != NULL);
   pr2_hardware_interface::HardwareInterface hw;

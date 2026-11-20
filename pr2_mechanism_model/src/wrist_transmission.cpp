@@ -37,6 +37,7 @@
 #include <math.h>
 #include <pluginlib/class_list_macros.hpp>
 #include "pr2_mechanism_model/robot.h"
+#include "pr2_mechanism_model/logging.h"
 #include "pr2_mechanism_model/wrist_transmission.h"
 
 using namespace pr2_mechanism_model;
@@ -76,7 +77,7 @@ bool WristTransmission::initXml(TiXmlElement *elt, Robot *robot)
   Actuator *a;
   if (!actuator_name || (a = robot->getActuator(actuator_name)) == NULL )
   {
-    ROS_WARN("WristTransmission could not find actuator named \"%s\"", actuator_name);
+    RCLCPP_WARN(::pr2_mechanism_model::logger(), "WristTransmission is missing an actuator name");
     return false;
   }
   a->command_.enable_ = true;
@@ -84,7 +85,7 @@ bool WristTransmission::initXml(TiXmlElement *elt, Robot *robot)
   const char *act_red = ael->Attribute("mechanicalReduction");
   if (!act_red)
     {
-      ROS_WARN("WristTransmission's actuator \"%s\" was not given a reduction.", actuator_name);
+      RCLCPP_WARN(::pr2_mechanism_model::logger(), "WristTransmission's actuator \"%s\" was not given a reduction.", actuator_name);
       return false;
     }
   actuator_reduction_.push_back(atof(act_red));
@@ -93,7 +94,7 @@ bool WristTransmission::initXml(TiXmlElement *elt, Robot *robot)
   actuator_name = ael ? ael->Attribute("name") : NULL;
   if (!actuator_name || (a = robot->getActuator(actuator_name)) == NULL )
   {
-    ROS_WARN("WristTransmission could not find actuator named \"%s\"", actuator_name);
+    RCLCPP_WARN(::pr2_mechanism_model::logger(), "WristTransmission is missing an actuator name");
     return false;
   }
   a->command_.enable_ = true;
@@ -101,7 +102,7 @@ bool WristTransmission::initXml(TiXmlElement *elt, Robot *robot)
   act_red = ael->Attribute("mechanicalReduction");
   if (!act_red)
     {
-      ROS_WARN("WristTransmission's actuator \"%s\" was not given a reduction.", actuator_name);
+      RCLCPP_WARN(::pr2_mechanism_model::logger(), "WristTransmission's actuator \"%s\" was not given a reduction.", actuator_name);
       return false;
     }
   actuator_reduction_.push_back(atof(act_red));
@@ -111,25 +112,25 @@ bool WristTransmission::initXml(TiXmlElement *elt, Robot *robot)
   const char *joint_name = j->Attribute("name");
   if (!joint_name)
   {
-    ROS_ERROR("WristTransmission did not specify joint name");
+    RCLCPP_ERROR(::pr2_mechanism_model::logger(), "WristTransmission did not specify joint name");
     return false;
   }
 #if URDFDOM_1_0_0_API
   urdf::JointConstSharedPtr joint = robot->robot_model_.getJoint(joint_name);
 #else
-  const boost::shared_ptr<const urdf::Joint> joint = robot->robot_model_.getJoint(joint_name);
+  const urdf::JointConstSharedPtr joint = robot->robot_model_.getJoint(joint_name);
 #endif
 
   if (!joint)
   {
-    ROS_ERROR("WristTransmission could not find joint named \"%s\"", joint_name);
+    RCLCPP_ERROR(::pr2_mechanism_model::logger(), "WristTransmission could not find joint named \"%s\"", joint_name);
     return false;
   }
   joint_names_.push_back(joint_name);
   const char *joint_red = j->Attribute("mechanicalReduction");
   if (!joint_red)
   {
-    ROS_WARN("WristTransmission's joint \"%s\" was not given a reduction.", joint_name);
+    RCLCPP_WARN(::pr2_mechanism_model::logger(), "WristTransmission's joint \"%s\" was not given a reduction.", joint_name);
     return false;
   }
   joint_reduction_.push_back(atof(joint_red));
@@ -142,13 +143,13 @@ bool WristTransmission::initXml(TiXmlElement *elt, Robot *robot)
   {
     if (!convertDouble(joint_offset, joint_offset_[0]))
     {
-      ROS_WARN("WristTransmission's joint \"%s\", cannot convert jointOffset attribute \"%s\" to floating point.",
+      RCLCPP_WARN(::pr2_mechanism_model::logger(), "WristTransmission's joint \"%s\", cannot convert jointOffset attribute \"%s\" to floating point.",
                joint_name, joint_offset);
       return false;
     }
     else
     {
-      ROS_WARN("Joint offset of %f for joint %s.", joint_offset_[0], joint_name);
+      RCLCPP_WARN(::pr2_mechanism_model::logger(), "Joint offset of %f for joint %s.", joint_offset_[0], joint_name);
     }
   }
 
@@ -156,25 +157,25 @@ bool WristTransmission::initXml(TiXmlElement *elt, Robot *robot)
   joint_name = j->Attribute("name");
   if (!joint_name)
   {
-    ROS_ERROR("WristTransmission did not specify joint name");
+    RCLCPP_ERROR(::pr2_mechanism_model::logger(), "WristTransmission did not specify joint name");
     return false;
   }
 #if URDFDOM_1_0_0_API
   urdf::JointConstSharedPtr joint2 = robot->robot_model_.getJoint(joint_name);
 #else
-  const boost::shared_ptr<const urdf::Joint> joint2 = robot->robot_model_.getJoint(joint_name);
+  const urdf::JointConstSharedPtr joint2 = robot->robot_model_.getJoint(joint_name);
 #endif
 
   if (!joint2)
   {
-    ROS_ERROR("WristTransmission could not find joint named \"%s\"", joint_name);
+    RCLCPP_ERROR(::pr2_mechanism_model::logger(), "WristTransmission could not find joint named \"%s\"", joint_name);
     return false;
   }
   joint_names_.push_back(joint_name);
   joint_red = j->Attribute("mechanicalReduction");
   if (!joint_red)
   {
-    ROS_WARN("WristTransmission's joint \"%s\" was not given a reduction.", joint_name);
+    RCLCPP_WARN(::pr2_mechanism_model::logger(), "WristTransmission's joint \"%s\" was not given a reduction.", joint_name);
     return false;
   }
   joint_reduction_.push_back(atof(joint_red));
@@ -187,13 +188,13 @@ bool WristTransmission::initXml(TiXmlElement *elt, Robot *robot)
   {
     if (!convertDouble(joint_offset, joint_offset_[1]))
     {
-      ROS_WARN("WristTransmission's joint \"%s\", cannot convert jointOffset attribute \"%s\" to floating point.",
+      RCLCPP_WARN(::pr2_mechanism_model::logger(), "WristTransmission's joint \"%s\", cannot convert jointOffset attribute \"%s\" to floating point.",
                joint_name, joint_offset);
       return false;
     }
     else
     {
-      ROS_WARN("Joint offset of %f for joint %s.", joint_offset_[1], joint_name); 
+      RCLCPP_WARN(::pr2_mechanism_model::logger(), "Joint offset of %f for joint %s.", joint_offset_[1], joint_name); 
     }
   }
 
@@ -211,14 +212,14 @@ bool WristTransmission::initXml(TiXmlElement *elt)
   const char *actuator_name = ael ? ael->Attribute("name") : NULL;
   if (!actuator_name)
   {
-    ROS_WARN("WristTransmission could not find actuator named \"%s\"", actuator_name);
+    RCLCPP_WARN(::pr2_mechanism_model::logger(), "WristTransmission is missing an actuator name");
     return false;
   }
   actuator_names_.push_back(actuator_name);
   const char *act_red = ael->Attribute("mechanicalReduction");
   if (!act_red)
   {
-    ROS_WARN("WristTransmission's actuator \"%s\" was not given a reduction.", actuator_name);
+    RCLCPP_WARN(::pr2_mechanism_model::logger(), "WristTransmission's actuator \"%s\" was not given a reduction.", actuator_name);
     return false;
   }
   actuator_reduction_.push_back(atof(act_red));
@@ -227,14 +228,14 @@ bool WristTransmission::initXml(TiXmlElement *elt)
   actuator_name = ael ? ael->Attribute("name") : NULL;
   if (!actuator_name)
   {
-    ROS_WARN("WristTransmission could not find actuator named \"%s\"", actuator_name);
+    RCLCPP_WARN(::pr2_mechanism_model::logger(), "WristTransmission is missing an actuator name");
     return false;
   }
   actuator_names_.push_back(actuator_name);
   act_red = ael->Attribute("mechanicalReduction");
   if (!act_red)
   {
-    ROS_WARN("WristTransmission's actuator \"%s\" was not given a reduction.", actuator_name);
+    RCLCPP_WARN(::pr2_mechanism_model::logger(), "WristTransmission's actuator \"%s\" was not given a reduction.", actuator_name);
     return false;
   }
   actuator_reduction_.push_back(atof(act_red));
@@ -244,14 +245,14 @@ bool WristTransmission::initXml(TiXmlElement *elt)
   const char *joint_name = j->Attribute("name");
   if (!joint_name)
   {
-    ROS_ERROR("WristTransmission did not specify joint name");
+    RCLCPP_ERROR(::pr2_mechanism_model::logger(), "WristTransmission did not specify joint name");
     return false;
   }
   joint_names_.push_back(joint_name);
   const char *joint_red = j->Attribute("mechanicalReduction");
   if (!joint_red)
   {
-    ROS_WARN("WristTransmission's joint \"%s\" was not given a reduction.", joint_name);
+    RCLCPP_WARN(::pr2_mechanism_model::logger(), "WristTransmission's joint \"%s\" was not given a reduction.", joint_name);
     return false;
   }
   joint_reduction_.push_back(atof(joint_red));
@@ -265,13 +266,13 @@ bool WristTransmission::initXml(TiXmlElement *elt)
     double offset;
     if (!convertDouble(joint_offset, joint_offset_[0]))
     {
-      ROS_WARN("WristTransmission's joint \"%s\", cannot convert jointOffset attribute \"%s\" to floating point.",
+      RCLCPP_WARN(::pr2_mechanism_model::logger(), "WristTransmission's joint \"%s\", cannot convert jointOffset attribute \"%s\" to floating point.",
                joint_name, joint_offset);
       return false;
     }
     else
     {
-      ROS_WARN("Joint offset of %f for joint %s.", joint_offset_[0], joint_name);
+      RCLCPP_WARN(::pr2_mechanism_model::logger(), "Joint offset of %f for joint %s.", joint_offset_[0], joint_name);
     }
   }
 
@@ -279,14 +280,14 @@ bool WristTransmission::initXml(TiXmlElement *elt)
   joint_name = j->Attribute("name");
   if (!joint_name)
   {
-    ROS_ERROR("WristTransmission did not specify joint name");
+    RCLCPP_ERROR(::pr2_mechanism_model::logger(), "WristTransmission did not specify joint name");
     return false;
   }
   joint_names_.push_back(joint_name);
   joint_red = j->Attribute("mechanicalReduction");
   if (!joint_red)
   {
-    ROS_WARN("WristTransmission's joint \"%s\" was not given a reduction.", joint_name);
+    RCLCPP_WARN(::pr2_mechanism_model::logger(), "WristTransmission's joint \"%s\" was not given a reduction.", joint_name);
     return false;
   }
   joint_reduction_.push_back(atof(joint_red));
@@ -298,13 +299,13 @@ bool WristTransmission::initXml(TiXmlElement *elt)
   {
     if (!convertDouble(joint_offset, joint_offset_[1]))
     {
-      ROS_WARN("WristTransmission's joint \"%s\", cannot convert jointOffset attribute \"%s\" to floating point.",
+      RCLCPP_WARN(::pr2_mechanism_model::logger(), "WristTransmission's joint \"%s\", cannot convert jointOffset attribute \"%s\" to floating point.",
                joint_name, joint_offset);
       return false;
     }
     else
     {
-      ROS_WARN("Joint offset of %f for joint %s.", joint_offset_[1], joint_name);
+      RCLCPP_WARN(::pr2_mechanism_model::logger(), "Joint offset of %f for joint %s.", joint_offset_[1], joint_name);
     }
   }
 
@@ -348,25 +349,25 @@ void WristTransmission::propagatePositionBackwards(
   if (! simulated_actuator_timestamp_initialized_)
     {
       // Set the time stamp to zero (it is measured relative to the start time).
-      as[0]->state_.sample_timestamp_ = ros::Duration(0);
-      as[1]->state_.sample_timestamp_ = ros::Duration(0);
+      as[0]->state_.sample_timestamp_ = rclcpp::Duration(0, 0);
+      as[1]->state_.sample_timestamp_ = rclcpp::Duration(0, 0);
 
       // Try to set the start time.  Only then do we claim initialized.
-      if (ros::isStarted())
+      if (true)
 	{
-	  simulated_actuator_start_time_ = ros::Time::now();
+	  simulated_actuator_start_time_ = ::pr2_mechanism_model::now();
 	  simulated_actuator_timestamp_initialized_ = true;
 	}
     }
   else
     {
       // Measure the time stamp relative to the start time.
-      as[0]->state_.sample_timestamp_ = ros::Time::now() - simulated_actuator_start_time_;
-      as[1]->state_.sample_timestamp_ = ros::Time::now() - simulated_actuator_start_time_;
+      as[0]->state_.sample_timestamp_ = ::pr2_mechanism_model::now() - simulated_actuator_start_time_;
+      as[1]->state_.sample_timestamp_ = ::pr2_mechanism_model::now() - simulated_actuator_start_time_;
     }
   // Set the historical (double) timestamp accordingly.
-  as[0]->state_.timestamp_ = as[0]->state_.sample_timestamp_.toSec();
-  as[1]->state_.timestamp_ = as[1]->state_.sample_timestamp_.toSec();
+  as[0]->state_.timestamp_ = as[0]->state_.sample_timestamp_.seconds();
+  as[1]->state_.timestamp_ = as[1]->state_.sample_timestamp_.seconds();
 
   // simulate calibration sensors by filling out actuator states
   // this is where to embed the hack which joint connects to which mcb

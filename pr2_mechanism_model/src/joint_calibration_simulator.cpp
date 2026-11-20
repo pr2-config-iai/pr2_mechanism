@@ -30,6 +30,7 @@
 // Author: Wim Meeussen
 
 #include "pr2_mechanism_model/joint_calibration_simulator.h"
+#include "pr2_mechanism_model/logging.h"
 #include <angles/angles.h>
 
 
@@ -83,7 +84,7 @@ void JointCalibrationSimulator::GetJointCalibrationInfo(pr2_mechanism_model::Joi
 
   // check
   if (js->joint_->type != urdf::Joint::CONTINUOUS && calibration_has_rising_ && calibration_has_falling_)
-      ROS_ERROR("Non-continuous joint with both rising and falling edge not supported");
+      RCLCPP_ERROR(::pr2_mechanism_model::logger(), "Non-continuous joint with both rising and falling edge not supported");
 
   this->got_info_ = true;
 }
@@ -122,7 +123,7 @@ void JointCalibrationSimulator::simulateJointCalibration(pr2_mechanism_model::Jo
 
   if (calibration_initialized_){
     // tripped calibration flag
-    //ROS_ERROR("debug: %s %d %d",js->joint_->name.c_str(),old_calibration_reading_ ,as->state_.calibration_reading_);
+    //RCLCPP_ERROR(::pr2_mechanism_model::logger(), "debug: %s %d %d",js->joint_->name.c_str(),old_calibration_reading_ ,as->state_.calibration_reading_);
     if (old_calibration_reading_ != as->state_.calibration_reading_){
       if (as->state_.calibration_reading_){ // low to high
         if (pos > old_calibration_pos_) // joint pos increasing and we are in the high region

@@ -2,6 +2,23 @@
 Changelog for package pr2_mechanism_model
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+2.0.0 (unreleased)
+------------------
+* Port to ROS 2 (Jazzy), ament_cmake. The transmission math is unchanged: replaying actuator
+  states recorded from the ROS 1 robot gives bit-identical joint positions, velocities and efforts
+  for all 45 joints (once the calibration reference positions are set, see below).
+* No ROS dependency beyond rclcpp logging; ``RobotState`` no longer derives from ROS 1
+  ``hardware_interface::HardwareInterface``. ``boost::shared_ptr`` -> ``std::shared_ptr``,
+  ``ros::Time``/``ros::Duration`` -> ``rclcpp::Time``/``rclcpp::Duration``.
+* ``Robot::initXml`` still takes a TinyXML (1) element, but hands the description to
+  ``urdf::Model::initString`` because ROS 2's urdf no longer parses TinyXML 1 elements.
+* Note for users: ``JointState::reference_position_`` is not set by this package. In ROS 1 the
+  calibration controllers set it from the URDF ``<calibration>`` edge (rising if present, else
+  falling) when they start; whoever replaces them must do the same.
+* Fix: printing a NULL actuator name when a transmission has no actuator name.
+* Fix: ``Robot`` destroyed its transmission plugin loader before the transmissions.
+* ``test_joint_calibration_simulator`` (a rostest node) is not ported.
+
 1.8.21 (2022-06-22)
 -------------------
 * set catkin_add_gtest within CATKIN_ENABLE_TESTING (`#346 <https://github.com/pr2/pr2_mechanism/issues/346>`_)

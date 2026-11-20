@@ -31,7 +31,9 @@
  * Author: Stuart Glaser, Wim Meeussen
  */
 
+#include <memory>
 #include "pr2_mechanism_model/robot.h"
+#include "pr2_mechanism_model/logging.h"
 #include "pr2_mechanism_model/transmission.h"
 #include <tinyxml.h>
 #include <urdf/model.h>
@@ -52,13 +54,17 @@ bool Robot::initXml(TiXmlElement *root)
 {
   // check if current time is valid
   if (!hw_){
-    ROS_ERROR("Mechanism Model received an invalid hardware interface");
+    RCLCPP_ERROR(::pr2_mechanism_model::logger(), "Mechanism Model received an invalid hardware interface");
     return false;
   }
 
   // Parses the xml into a robot model
-  if (!robot_model_.initXml(root)){
-    ROS_ERROR("Mechanism Model failed to parse the URDF xml into a robot model");
+  // ROS 2's urdf::Model only parses strings or tinyxml2, so hand it the description as text.
+  TiXmlPrinter printer;
+  printer.SetIndent("");
+  root->Accept(&printer);
+  if (!robot_model_.initString(printer.CStr())){
+    RCLCPP_ERROR(::pr2_mechanism_model::logger(), "Mechanism Model failed to parse the URDF xml into a robot model");
     return false;
   }
 
@@ -81,7 +87,7 @@ bool Robot::initXml(TiXmlElement *root)
     else
       type = xit->Attribute("type");
     if(type.substr(0, 3) != "pr2") continue;
-    boost::shared_ptr<Transmission> t;
+    std::shared_ptr<Transmission> t;
     try {
       // Backwards compatibility for using non-namespaced controller types
       if (!transmission_loader_->isClassAvailable(type))
@@ -91,7 +97,7 @@ bool Robot::initXml(TiXmlElement *root)
         {
           if(type == transmission_loader_->getName(classes[i]))
           {
-            ROS_WARN("The deprecated transmission type %s was not found.  Using the namespaced version %s instead.  "
+            RCLCPP_WARN(::pr2_mechanism_model::logger(), "The deprecated transmission type %s was not found.  Using the namespaced version %s instead.  "
                      "Please update your urdf file to use the namespaced version.",
                      type.c_str(), classes[i].c_str());
             type = classes[i];
@@ -99,17 +105,17 @@ bool Robot::initXml(TiXmlElement *root)
           }
         }
       }
-      t = transmission_loader_->createInstance(type);
+      t = transmission_loader_->createSharedInstance(type);
     }
     catch (const std::runtime_error &ex)
     {
-      ROS_ERROR("Could not load class %s: %s", type.c_str(), ex.what());
+      RCLCPP_ERROR(::pr2_mechanism_model::logger(), "Could not load class %s: %s", type.c_str(), ex.what());
     }
 
     if (!t)
-      ROS_ERROR("Unknown transmission type: %s", type.c_str());
+      RCLCPP_ERROR(::pr2_mechanism_model::logger(), "Unknown transmission type: %s", type.c_str());
     else if (!t->initXml(xit, this)){
-      ROS_ERROR("Failed to initialize transmission");
+      RCLCPP_ERROR(::pr2_mechanism_model::logger(), "Failed to initialize transmission");
     }
     else // Success!
       transmissions_.push_back(t);
@@ -118,13 +124,13 @@ bool Robot::initXml(TiXmlElement *root)
   return true;
 }
 
-ros::Time Robot::getTime()
+rclcpp::Time Robot::getTime()
 {
   return hw_->current_time_;
 }
 
 template <class T>
-int findIndexByName(const std::vector<boost::shared_ptr<T> >& v, 
+int findIndexByName(const std::vector<std::shared_ptr<T> >& v, 
       const std::string &name)
 {
   for (unsigned int i = 0; i < v.size(); ++i)
@@ -145,10 +151,10 @@ Actuator* Robot::getActuator(const std::string &name) const
   return hw_->getActuator(name);
 }
 
-boost::shared_ptr<Transmission> Robot::getTransmission(const std::string &name) const
+std::shared_ptr<Transmission> Robot::getTransmission(const std::string &name) const
 {
   int i = getTransmissionIndex(name);
-  return i >= 0 ? transmissions_[i] : boost::shared_ptr<Transmission>();
+  return i >= 0 ? transmissions_[i] : std::shared_ptr<Transmission>();
 }
 
 
@@ -167,7 +173,7 @@ RobotState::RobotState(Robot *model)
   unsigned int js_size = 0;
   for (unsigned int i = 0; i < model_->transmissions_.size(); ++i)
   {
-     boost::shared_ptr<Transmission> t = model_->transmissions_[i];
+     std::shared_ptr<Transmission> t = model_->transmissions_[i];
     for (unsigned int j = 0; j < t->actuator_names_.size(); ++j)
     {
       Actuator *act = model_->getActuator(t->actuator_names_[j]);
@@ -182,7 +188,7 @@ RobotState::RobotState(Robot *model)
   unsigned int js_id = 0;
   for (unsigned int i = 0; i < model_->transmissions_.size(); ++i)
   {
-     boost::shared_ptr<Transmission> t = model_->transmissions_[i];
+     std::shared_ptr<Transmission> t = model_->transmissions_[i];
     for (unsigned int j = 0; j < t->joint_names_.size(); ++j)
     {
       joint_states_[js_id].joint_ = model_->robot_model_.getJoint(t->joint_names_[j]);
@@ -194,9 +200,9 @@ RobotState::RobotState(Robot *model)
 
   // warnings
   if (model_->transmissions_.empty())
-    ROS_WARN("No transmissions were specified in the robot description.");
+    RCLCPP_WARN(::pr2_mechanism_model::logger(), "No transmissions were specified in the robot description.");
   if (js_size == 0)
-    ROS_WARN("None of the joints in the robot desription matches up to a motor. The robot is uncontrollable.");
+    RCLCPP_WARN(::pr2_mechanism_model::logger(), "None of the joints in the robot desription matches up to a motor. The robot is uncontrollable.");
 }
 
 

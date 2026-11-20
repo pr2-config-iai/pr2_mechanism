@@ -36,7 +36,7 @@
 
 #include <string>
 #include <gtest/gtest.h>
-#include <ros/ros.h>
+#include "pr2_mechanism_model/logging.h"
 #include <urdf/model.h>
 #include "pr2_mechanism_model/joint_calibration_simulator.h"
 
@@ -71,9 +71,9 @@ TEST_F(TestParser, test)
   urdf::JointConstSharedPtr jnt_cont2 = robot.getJoint("continuous2");
   urdf::JointConstSharedPtr jnt_rev  = robot.getJoint("revolute");
 #else
-  boost::shared_ptr<const urdf::Joint> jnt_cont1 = robot.getJoint("continuous1");
-  boost::shared_ptr<const urdf::Joint> jnt_cont2 = robot.getJoint("continuous2");
-  boost::shared_ptr<const urdf::Joint> jnt_rev  = robot.getJoint("revolute");
+  urdf::JointConstSharedPtr jnt_cont1 = robot.getJoint("continuous1");
+  urdf::JointConstSharedPtr jnt_cont2 = robot.getJoint("continuous2");
+  urdf::JointConstSharedPtr jnt_rev  = robot.getJoint("revolute");
 #endif
   ASSERT_TRUE(jnt_cont1 != NULL);
   ASSERT_TRUE(jnt_cont2 != NULL);

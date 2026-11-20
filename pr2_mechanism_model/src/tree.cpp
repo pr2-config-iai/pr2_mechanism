@@ -38,6 +38,7 @@
 
 #include <kdl_parser/kdl_parser.hpp>
 #include "pr2_mechanism_model/tree.h"
+#include "pr2_mechanism_model/logging.h"
 
 namespace pr2_mechanism_model
 {
@@ -49,11 +50,11 @@ bool Tree::init(RobotState *robot_state)
   // construct the kdl tree
   if (!kdl_parser::treeFromUrdfModel(robot_state->model_->robot_model_, kdl_tree_))
   {
-     ROS_ERROR("Failed to construct KDL:Tree from robot_state's URDF model! Aborting ...");
+     RCLCPP_ERROR(::pr2_mechanism_model::logger(), "Failed to construct KDL:Tree from robot_state's URDF model! Aborting ...");
   }
   else
   {
-      ROS_INFO("KDL::Tree successful created.");
+      RCLCPP_INFO(::pr2_mechanism_model::logger(), "KDL::Tree successful created.");
 
       segmentMap = kdl_tree_.getSegments();
   }
@@ -64,7 +65,7 @@ bool Tree::init(RobotState *robot_state)
   // map for saving the temporary result of the joint extraction from the tree
   std::map<unsigned int, std::string> jointMap;
 
-  ROS_DEBUG("Extracting all joints from the tree, which are not of type KDL::Joint::None.");
+  RCLCPP_DEBUG(::pr2_mechanism_model::logger(), "Extracting all joints from the tree, which are not of type KDL::Joint::None.");
   for (KDL::SegmentMap::const_iterator seg_it = segmentMap.begin(); seg_it != segmentMap.end(); ++seg_it)
   {
     if (seg_it->second.segment.getJoint().getType() != KDL::Joint::None)
@@ -72,7 +73,7 @@ bool Tree::init(RobotState *robot_state)
   }
 
   // in the second step the joints found get checked, if they appear in the JointState vector of the robot
-  ROS_DEBUG("Checking, if extracted joints can be found in the JointState vector of the robot.");
+  RCLCPP_DEBUG(::pr2_mechanism_model::logger(), "Checking, if extracted joints can be found in the JointState vector of the robot.");
   joints_.clear();
   for (std::map<unsigned int, std::string>::const_iterator jnt_it = jointMap.begin();
   jnt_it != jointMap.end(); ++jnt_it)
@@ -80,20 +81,20 @@ bool Tree::init(RobotState *robot_state)
     JointState* jnt = robot_state->getJointState(jnt_it->second.c_str());
     if (!jnt)
     {
-      ROS_ERROR("Joint '%s' has not been found in the robot's joint state vector! Aborting ...",
+      RCLCPP_ERROR(::pr2_mechanism_model::logger(), "Joint '%s' has not been found in the robot's joint state vector! Aborting ...",
       jnt_it->second.c_str());
       return false;
     }
     joints_.push_back(jnt);
   }
 
-  ROS_DEBUG("The result after joint extraction and checking:");
+  RCLCPP_DEBUG(::pr2_mechanism_model::logger(), "The result after joint extraction and checking:");
   for (unsigned int i = 0; i < joints_.size(); ++i)
   {
-    ROS_DEBUG("joints_[%d]: joint_.name = %s", i, joints_[i]->joint_->name.c_str());
+    RCLCPP_DEBUG(::pr2_mechanism_model::logger(), "joints_[%d]: joint_.name = %s", i, joints_[i]->joint_->name.c_str());
   }
 
-  ROS_INFO("Added %i joints", int(joints_.size()));
+  RCLCPP_INFO(::pr2_mechanism_model::logger(), "Added %i joints", int(joints_.size()));
 
   return true;
 }

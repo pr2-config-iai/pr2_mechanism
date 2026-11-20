@@ -95,7 +95,7 @@ public:
 
 private:
   int simulated_actuator_timestamp_initialized_;
-  ros::Time simulated_actuator_start_time_;
+  rclcpp::Time simulated_actuator_start_time_;
 
   JointCalibrationSimulator joint_calibration_simulator_[2];
 };

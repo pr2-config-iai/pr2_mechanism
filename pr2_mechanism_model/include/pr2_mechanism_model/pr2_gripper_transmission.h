@@ -114,7 +114,7 @@ private:
 #define TOL 0.00001   // limit for denominators
 
   int simulated_actuator_timestamp_initialized_;
-  ros::Time simulated_actuator_start_time_;
+  rclcpp::Time simulated_actuator_start_time_;
 
   JointCalibrationSimulator joint_calibration_simulator_;
 };

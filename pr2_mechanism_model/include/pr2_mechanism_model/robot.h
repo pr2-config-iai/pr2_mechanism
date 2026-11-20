@@ -46,12 +46,12 @@
 #ifndef ROBOT_H
 #define ROBOT_H
 
+#include <memory>
 #include <vector>
 #include <map>
 #include <string>
 #include <urdf/model.h>
 #include <pr2_hardware_interface/hardware_interface.h>
-#include <hardware_interface/hardware_interface.h>
 #include "pr2_mechanism_model/joint.h"
 #include "pr2_mechanism_model/transmission.h"
 
@@ -82,7 +82,8 @@ public:
   Robot(pr2_hardware_interface::HardwareInterface *hw);
 
   /// Destructor
-  ~Robot() { }
+  // Destroy the transmissions while transmission_loader_ (declared last, destroyed first) still exists.
+  ~Robot() { transmissions_.clear(); }
 
   /// Initialize the robot model form xml
   bool initXml(TiXmlElement *root);
@@ -91,7 +92,7 @@ public:
   urdf::Model robot_model_;
 
   /// The list of transmissions
-  std::vector<boost::shared_ptr<Transmission> > transmissions_;
+  std::vector<std::shared_ptr<Transmission> > transmissions_;
 
   /// get the transmission index based on the transmission name. Returns -1 on failure
   int getTransmissionIndex(const std::string &name) const;
@@ -100,16 +101,16 @@ public:
   pr2_hardware_interface::Actuator* getActuator(const std::string &name) const;
 
   /// get a transmission pointer based on the transmission name. Returns NULL on failure
-  boost::shared_ptr<pr2_mechanism_model::Transmission> getTransmission(const std::string &name) const;
+  std::shared_ptr<pr2_mechanism_model::Transmission> getTransmission(const std::string &name) const;
 
   /// Get the time when the current controller cycle was started
-  ros::Time getTime();
+  rclcpp::Time getTime();
 
   /// a pointer to the pr2 hardware interface. Only for advanced users
   pr2_hardware_interface::HardwareInterface* hw_;
 
 private:
-  boost::shared_ptr<pluginlib::ClassLoader<pr2_mechanism_model::Transmission> > transmission_loader_;
+  std::shared_ptr<pluginlib::ClassLoader<pr2_mechanism_model::Transmission> > transmission_loader_;
 };
 
 
@@ -123,7 +124,7 @@ private:
  * Some specialized controllers (such as the calibration controllers) can get access
  * to actuator states, and transmission states.
  */
-class RobotState : public hardware_interface::HardwareInterface
+class RobotState
 {
 public:
   /// constructor
@@ -142,7 +143,7 @@ public:
   const JointState *getJointState(const std::string &name) const;
 
   /// Get the time when the current controller cycle was started
-  ros::Time getTime() {return model_->getTime();};
+  rclcpp::Time getTime() {return model_->getTime();};
 
  /**
   * Each transmission refers to the actuators and joints it connects by name.

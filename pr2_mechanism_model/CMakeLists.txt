@@ -1,26 +1,28 @@
-# http://ros.org/doc/groovy/api/catkin/html/user_guide/supposed.html
-cmake_minimum_required(VERSION 2.8.3)
+cmake_minimum_required(VERSION 3.16)
 project(pr2_mechanism_model)
 
-# Load catkin and all dependencies required for this package
-find_package(catkin REQUIRED COMPONENTS cmake_modules roscpp pr2_hardware_interface urdf kdl_parser pluginlib angles hardware_interface rostest rosunit)
+if(NOT CMAKE_CXX_STANDARD)
+  set(CMAKE_CXX_STANDARD 17)
+endif()
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE Release)
+endif()
 
+find_package(ament_cmake REQUIRED)
+find_package(rclcpp REQUIRED)
+find_package(pr2_hardware_interface REQUIRED)
+find_package(urdf REQUIRED)
+find_package(kdl_parser REQUIRED)
+find_package(orocos_kdl_vendor REQUIRED)
+find_package(orocos_kdl REQUIRED)
+find_package(pluginlib REQUIRED)
+find_package(angles REQUIRED)
+find_package(Boost REQUIRED)
 find_package(Eigen3 REQUIRED)
-find_package(TinyXML REQUIRED)
-find_package(urdfdom REQUIRED)
-include_directories(SYSTEM ${EIGEN3_INCLUDE_DIRS})
-include_directories(include ${catkin_INCLUDE_DIRS} ${urdfdom_INCLUDE_DIRS})
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(TINYXML REQUIRED IMPORTED_TARGET tinyxml)
 
-catkin_package(
-    DEPENDS TinyXML urdfdom
-    CATKIN_DEPENDS roscpp pr2_hardware_interface urdf kdl_parser pluginlib angles hardware_interface
-    INCLUDE_DIRS include
-    LIBRARIES pr2_mechanism_model
-)
-
-add_definitions(-O3)
-
-add_library( pr2_mechanism_model
+add_library(${PROJECT_NAME} SHARED
   src/joint.cpp
   src/robot.cpp
   src/chain.cpp
@@ -31,43 +33,40 @@ add_library( pr2_mechanism_model
   src/pr2_belt_transmission.cpp
   src/joint_calibration_simulator.cpp
 )
+target_include_directories(${PROJECT_NAME} PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include/${PROJECT_NAME}>)
+# urdfdom >= 1.0 (std::shared_ptr based API); the sources still carry the old #if switch
+target_compile_definitions(${PROJECT_NAME} PUBLIC URDFDOM_1_0_0_API=1)
+target_link_libraries(${PROJECT_NAME} PUBLIC
+  rclcpp::rclcpp
+  pr2_hardware_interface::pr2_hardware_interface
+  urdf::urdf
+  kdl_parser::kdl_parser
+  orocos-kdl
+  pluginlib::pluginlib
+  angles::angles
+  Boost::boost
+  Eigen3::Eigen
+  PkgConfig::TINYXML)
+target_link_options(${PROJECT_NAME} PRIVATE -Wl,--no-undefined)
 
-find_package(PkgConfig)
-pkg_check_modules(URDFDOM REQUIRED urdfdom)
-if ("${URDFDOM_VERSION}" VERSION_EQUAL "1.0.0" OR "${URDFDOM_VERSION}" VERSION_GREATER "1.0.0")
-  add_definitions(-DURDFDOM_1_0_0_API)
+pluginlib_export_plugin_description_file(${PROJECT_NAME} transmission_plugins.xml)
+
+install(TARGETS ${PROJECT_NAME} EXPORT export_${PROJECT_NAME}
+  ARCHIVE DESTINATION lib LIBRARY DESTINATION lib RUNTIME DESTINATION bin)
+install(DIRECTORY include/ DESTINATION include/${PROJECT_NAME})
+
+if(BUILD_TESTING)
+  find_package(ament_cmake_gtest REQUIRED)
+  ament_add_gtest(test_chain test/test_chain.cpp)
+  target_compile_definitions(test_chain PRIVATE PR2_URDF_PATH="${CMAKE_CURRENT_SOURCE_DIR}/pr2.urdf")
+  target_link_libraries(test_chain ${PROJECT_NAME})
+  ament_add_gtest(test_wrist_transmission test/test_wrist_transmission.cpp)
+  target_link_libraries(test_wrist_transmission ${PROJECT_NAME})
+  # test_joint_calibration_simulator is a rostest node; not ported.
 endif()
 
-pr2_enable_rpath(pr2_mechanism_model)
-target_link_libraries(pr2_mechanism_model ${catkin_LIBRARIES} )
-
-if(CATKIN_ENABLE_TESTING)
-  catkin_add_gtest(test_chain test/test_chain.cpp)
-  target_link_libraries(test_chain pr2_mechanism_model ${catkin_LIBRARIES})
-
-  catkin_add_gtest(test_wrist_transmission test/test_wrist_transmission.cpp)
-  target_link_libraries(test_wrist_transmission pr2_mechanism_model ${catkin_LIBRARIES})
-
-  # test joint calibration simulator for writing actuator state optical flags
-  #  in propagatePositionBackwards() call
-  add_executable(test_joint_calibration_simulator
-    test/test_joint_calibration_simulator.cpp
-    src/joint_calibration_simulator.cpp)
-  target_link_libraries(test_joint_calibration_simulator pr2_mechanism_model ${catkin_LIBRARIES} ${GTEST_LIBRARIES})
-  add_dependencies(test_joint_calibration_simulator gtest gtest_main)
-  add_dependencies(tests test_joint_calibration_simulator)
-  set_target_properties(test_joint_calibration_simulator PROPERTIES EXCLUDE_FROM_ALL TRUE)
-
-  add_rostest(test/test_joint_calibration_simulator.launch)
-endif()
-
-install(DIRECTORY include/${PROJECT_NAME}/
-   DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION})
-
-install(TARGETS pr2_mechanism_model
-   RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION}
-   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION})
-
-install(FILES transmission_plugins.xml
-   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})
+ament_export_targets(export_${PROJECT_NAME} HAS_LIBRARY_TARGET)
+ament_export_dependencies(rclcpp pr2_hardware_interface urdf kdl_parser orocos_kdl_vendor orocos_kdl pluginlib angles Boost Eigen3 PkgConfig)
+ament_package(CONFIG_EXTRAS cmake/${PROJECT_NAME}-extras.cmake)

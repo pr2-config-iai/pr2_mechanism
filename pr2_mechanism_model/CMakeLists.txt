@@ -27,10 +27,6 @@ add_library(${PROJECT_NAME} SHARED
   src/robot.cpp
   src/chain.cpp
   src/tree.cpp
-  src/simple_transmission.cpp
-  src/pr2_gripper_transmission.cpp
-  src/wrist_transmission.cpp
-  src/pr2_belt_transmission.cpp
   src/joint_calibration_simulator.cpp
 )
 target_include_directories(${PROJECT_NAME} PUBLIC
@@ -51,9 +47,24 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
   PkgConfig::TINYXML)
 target_link_options(${PROJECT_NAME} PRIVATE -Wl,--no-undefined)
 
+# The transmissions are pluginlib plugins and live in their own library that nothing links (ROS 2
+# port; ROS 1 had them in libpr2_mechanism_model). class_loader attributes a plugin library's
+# factories to whichever loader is active when the library gets loaded. If the transmissions sat in
+# the core library, loading a plugin that links it (e.g. pr2_ros2_control's hardware component)
+# would load them under that plugin's loader, and Robot's transmission loader would then find
+# "no factory" for SimpleTransmission and friends.
+add_library(${PROJECT_NAME}_transmissions SHARED
+  src/simple_transmission.cpp
+  src/pr2_gripper_transmission.cpp
+  src/wrist_transmission.cpp
+  src/pr2_belt_transmission.cpp
+)
+target_link_libraries(${PROJECT_NAME}_transmissions PUBLIC ${PROJECT_NAME})
+target_link_options(${PROJECT_NAME}_transmissions PRIVATE -Wl,--no-undefined)
+
 pluginlib_export_plugin_description_file(${PROJECT_NAME} transmission_plugins.xml)
 
-install(TARGETS ${PROJECT_NAME} EXPORT export_${PROJECT_NAME}
+install(TARGETS ${PROJECT_NAME} ${PROJECT_NAME}_transmissions EXPORT export_${PROJECT_NAME}
   ARCHIVE DESTINATION lib LIBRARY DESTINATION lib RUNTIME DESTINATION bin)
 install(DIRECTORY include/ DESTINATION include/${PROJECT_NAME})
 
@@ -61,9 +72,9 @@ if(BUILD_TESTING)
   find_package(ament_cmake_gtest REQUIRED)
   ament_add_gtest(test_chain test/test_chain.cpp)
   target_compile_definitions(test_chain PRIVATE PR2_URDF_PATH="${CMAKE_CURRENT_SOURCE_DIR}/pr2.urdf")
-  target_link_libraries(test_chain ${PROJECT_NAME})
+  target_link_libraries(test_chain ${PROJECT_NAME}_transmissions)
   ament_add_gtest(test_wrist_transmission test/test_wrist_transmission.cpp)
-  target_link_libraries(test_wrist_transmission ${PROJECT_NAME})
+  target_link_libraries(test_wrist_transmission ${PROJECT_NAME}_transmissions)
   # test_joint_calibration_simulator is a rostest node; not ported.
 endif()
 

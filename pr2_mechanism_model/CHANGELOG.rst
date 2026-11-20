@@ -4,6 +4,10 @@ Changelog for package pr2_mechanism_model
 
 2.0.0 (unreleased)
 ------------------
+* The transmissions moved from ``libpr2_mechanism_model`` into their own plugin library
+  ``libpr2_mechanism_model_transmissions``, which nothing links. Otherwise class_loader assigns
+  their factories to the loader of whichever plugin pulls in the core library (e.g. the ros2_control
+  hardware component), and ``Robot``'s transmission loader finds "no factory" for them.
 * Port to ROS 2 (Jazzy), ament_cmake. The transmission math is unchanged: replaying actuator
   states recorded from the ROS 1 robot gives bit-identical joint positions, velocities and efforts
   for all 45 joints (once the calibration reference positions are set, see below).
